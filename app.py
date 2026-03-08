@@ -14,7 +14,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, "sensex_data_perfect.csv")
 
 # Model and Scaler are inside the 'model_data' folder
-MODEL_FILE = os.path.join(BASE_DIR, "model_data", "sensex_model.h5") 
+MODEL_FILE = os.path.join(BASE_DIR, "model_data", "sensex_model.keras") 
 SCALER_FILE = os.path.join(BASE_DIR, "model_data", "price_scaler.pkl")
 WINDOW_SIZE = 60
 
