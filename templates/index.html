@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.I.F.E - AI Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #1e1e1e;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --accent: #bb86fc;
+            --accent-hover: #9b5de5;
+            --bullish: #03dac6;
+            --bearish: #cf6679;
+            --border: #333333;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* SIDEBAR CSS */
+        .sidebar {
+            width: 300px;
+            background-color: var(--panel-bg);
+            padding: 20px;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .sidebar h2 { margin: 0; color: var(--accent); }
+        .sidebar p { color: var(--text-muted); font-size: 14px; margin-top: 5px; }
+        .control-group { display: flex; flex-direction: column; gap: 8px; }
+        select, input[type="range"] {
+            width: 100%; padding: 10px; background: #2c2c2c; color: white;
+            border: 1px solid var(--border); border-radius: 5px;
+        }
+        
+        /* MAIN CONTENT CSS */
+        .main-content {
+            flex: 1;
+            padding: 20px 40px;
+            overflow-y: auto;
+            width: 100%; /* Forces it to take available space */
+        }
+        
+        /* TABS CSS */
+        .tabs {
+            display: flex; gap: 10px; margin-bottom: 20px;
+            border-bottom: 2px solid var(--border); padding-bottom: 10px;
+        }
+        .tab-btn {
+            background: transparent; color: var(--text-muted); border: none;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            padding: 10px 20px; border-radius: 5px; transition: 0.3s;
+        }
+        .tab-btn:hover { color: var(--text-main); background: #2c2c2c; }
+        .tab-btn.active { color: var(--accent); background: rgba(187, 134, 252, 0.1); }
+        .tab-content { display: none; width: 100%; }
+        .tab-content.active { display: block; }
+
+        /* PANELS & TABLES */
+        .panel { background-color: var(--panel-bg); padding: 20px; border-radius: 10px; width: 100%; box-sizing: border-box; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--accent); }
+        
+        /* PREDICTION ENGINE CSS */
+        .metric-box { background-color: #2c2c2c; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+        .metric-value { font-size: 32px; font-weight: bold; margin-top: 10px; }
+        .btn-primary { width: 100%; padding: 15px; background-color: var(--accent); color: #000; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-primary:hover { background-color: var(--accent-hover); }
+        .btn-secondary { display: inline-block; padding: 10px 20px; background-color: #2c2c2c; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;}
+        .bullish { color: var(--bullish); }
+        .bearish { color: var(--bearish); }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div>
+            <h2>S.I.F.E Terminal</h2>
+            <p>Sensex Intelligent Forecasting Engine<br>Team Alpha</p>
+        </div>
+        <hr style="border-color: var(--border); width: 100%;">
+        
+        <div class="control-group">
+            <label>Select Market Index</label>
+            <select disabled>
+                <option>BSE SENSEX (^BSESN)</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Days to show on chart: <span id="daysLabel">100</span></label>
+            <input type="range" id="daysSlider" min="30" max="365" value="100" oninput="updateSliderLabel()" onchange="fetchData()">
+        </div>
+        
+        <div style="margin-top: auto; padding: 15px; background: rgba(3, 218, 198, 0.1); border-radius: 8px; border: 1px solid var(--bullish);">
+            <p style="color: var(--bullish); margin: 0; text-align: center;">AI Model Status: <strong>ONLINE</strong></p>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <h1>📈 AI-Powered Market Forecasting Dashboard</h1>
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab(event, 'tab-data')">🗃️ Data Explorer</button>
+            <button class="tab-btn" onclick="switchTab(event, 'tab-chart')">📊 Interactive Analytics</button>
+            <button class="tab-btn" onclick="switchTab(event, 'tab-predict')">🧠 AI Prediction Engine</button>
+        </div>
+
+        <div id="tab-data" class="tab-content active panel">
+            <h3>Raw Market Data (OHLCV)</h3>
+            <p style="color: var(--text-muted)">Showing the last <span class="daysDisplay">100</span> days of historical data.</p>
+            <a href="/download" class="btn-secondary">⬇️ Download Cleaned Dataset (CSV)</a>
+            <div style="max-height: 500px; overflow-y: auto; margin-top: 15px;">
+                <table id="dataTable">
+                    <thead>
+                        <tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-chart" class="tab-content panel">
+            <h3>Interactive Trend Analysis</h3>
+            <p style="color: var(--text-muted)">Zoom, Pan, and hover to see exact price details.</p>
+            <div id="plotlyChart" style="width: 100%; height: 70vh; min-height: 500px;"></div>
+        </div>
+
+        <div id="tab-predict" class="tab-content panel">
+            <h3>Deep Learning Prediction Module</h3>
+            <p style="color: var(--text-muted)">Click to feed the last 60 days of momentum into the LSTM neural network.</p>
+            
+            <button class="btn-primary" id="predictBtn" onclick="runPrediction()">🚀 Run S.I.F.E Engine for Tomorrow</button>
+            <div id="loadingMsg" style="display: none; text-align: center; margin: 20px; color: var(--accent);">AI is analyzing sequences... Please wait.</div>
+
+            <div id="predictionResults" style="display: none; margin-top: 30px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="metric-box">
+                        <div style="color: var(--text-muted)">Last Known Close (<span id="resDate"></span>)</div>
+                        <div class="metric-value">₹ <span id="resLastPrice"></span></div>
+                    </div>
+                    <div class="metric-box" style="border: 2px solid var(--accent);">
+                        <div style="color: var(--accent)">🔮 Predicted Tomorrow</div>
+                        <div class="metric-value">₹ <span id="resPredPrice"></span></div>
+                        <div id="resDelta" style="margin-top: 10px; font-size: 18px; font-weight: bold;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Tab Switching Logic
+        function switchTab(evt, tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            evt.currentTarget.classList.add('active');
+
+            // FIX: Force the graph to resize and stretch fully when its tab is clicked
+            if (tabId === 'tab-chart') {
+                window.dispatchEvent(new Event('resize'));
+            }
+        }
+
+        // 2. Slider Logic
+        function updateSliderLabel() {
+            const days = document.getElementById('daysSlider').value;
+            document.getElementById('daysLabel').innerText = days;
+            document.querySelectorAll('.daysDisplay').forEach(el => el.innerText = days);
+        }
+
+        // 3. Fetch Data for Table and Chart
+        async function fetchData() {
+            const days = document.getElementById('daysSlider').value;
+            try {
+                const response = await fetch(`/api/data?days=${days}`);
+                const data = await response.json();
+                
+                // Populate Table
+                const tbody = document.querySelector('#dataTable tbody');
+                tbody.innerHTML = '';
+                data.forEach(row => {
+                    tbody.innerHTML += `<tr>
+                        <td>${row.Date.split(' ')[0]}</td>
+                        <td>${row.Open.toFixed(2)}</td>
+                        <td>${row.High.toFixed(2)}</td>
+                        <td>${row.Low.toFixed(2)}</td>
+                        <td>${row.Close.toFixed(2)}</td>
+                        <td>${row.Volume}</td>
+                    </tr>`;
+                });
+
+                // Draw Plotly Candlestick Chart
+                const dates = data.map(r => r.Date);
+                const trace1 = {
+                    x: dates, close: data.map(r => r.Close),
+                    high: data.map(r => r.High), low: data.map(r => r.Low),
+                    open: data.map(r => r.Open), type: 'candlestick',
+                    name: 'Sensex Price', increasing: {line: {color: '#03dac6'}}, decreasing: {line: {color: '#cf6679'}}
+                };
+                const trace2 = {
+                    x: dates, y: data.map(r => r.SMA_50),
+                    type: 'scatter', mode: 'lines', name: '50-Day SMA', line: {color: '#bb86fc', width: 2}
+                };
+
+                const layout = {
+                    paper_bgcolor: '#1e1e1e', plot_bgcolor: '#1e1e1e', font: {color: '#ffffff'},
+                    margin: {t: 20, l: 40, r: 20, b: 40}, xaxis: {rangeslider: {visible: false}},
+                    autosize: true // Forces it to fill the container automatically
+                };
+
+                // Added {responsive: true} to strictly tell Plotly to stretch to 100% width
+                Plotly.newPlot('plotlyChart', [trace1, trace2], layout, {responsive: true});
+
+            } catch (error) { console.error("Data Fetch Error:", error); }
+        }
+
+        // 4. Run AI Prediction
+        async function runPrediction() {
+            document.getElementById('predictBtn').style.display = 'none';
+            document.getElementById('loadingMsg').style.display = 'block';
+            document.getElementById('predictionResults').style.display = 'none';
+
+            try {
+                const response = await fetch('/api/predict');
+                const data = await response.json();
+
+                if(data.error) { alert("Backend Error: " + data.error); return; }
+
+                document.getElementById('resDate').innerText = data.last_date.split(' ')[0];
+                document.getElementById('resLastPrice').innerText = data.last_price.toLocaleString();
+                document.getElementById('resPredPrice').innerText = data.predicted_price.toLocaleString();
+
+                const deltaEl = document.getElementById('resDelta');
+                if (data.difference > 0) {
+                    deltaEl.innerHTML = `▲ +₹${data.difference} (BULLISH)`;
+                    deltaEl.className = 'bullish';
+                } else {
+                    deltaEl.innerHTML = `▼ ₹${Math.abs(data.difference)} (BEARISH)`;
+                    deltaEl.className = 'bearish';
+                }
+
+                document.getElementById('predictionResults').style.display = 'block';
+            } catch (error) {
+                alert("Could not connect to AI Engine.");
+            } finally {
+                document.getElementById('predictBtn').style.display = 'block';
+                document.getElementById('loadingMsg').style.display = 'none';
+            }
+        }
+
+        // Initialize on load
+        window.onload = fetchData;
+    </script>
+</body>
+</html>
