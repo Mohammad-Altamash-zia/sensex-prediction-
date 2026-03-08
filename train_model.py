@@ -8,7 +8,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 
 # --- CONFIGURATION ---
 DATA_FOLDER = "model_data"
-MODEL_SAVE_PATH = "sensex_model.h5"
+MODEL_SAVE_PATH = "sensex_model.keras"
 
 # AI Hyperparameters (The "Tuning" Settings)
 EPOCHS = 50

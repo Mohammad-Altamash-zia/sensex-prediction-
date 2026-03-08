@@ -1,8 +1,7 @@
 Flask
 pandas
 numpy<2.0.0
-tensorflow-cpu==2.20.0
-keras
+tensorflow-cpu
 joblib
 scikit-learn
 gunicorn
